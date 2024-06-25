@@ -5,7 +5,7 @@
 #include <iostream>
 #include <opencv2/core/ocl.hpp>
 #include <chrono>
-//#include <thread>
+#include <thread>
 
 //#define GET_DIFF_VALUE_DEBUG_ACTIVE
 
@@ -41,18 +41,32 @@ double getDiffValue(cv::Mat *curImg, cv::Mat *lastImg)
     return (float)diffCount / ((float)curImg->cols * (float)curImg->rows);
 }
 
+std::queue<cv::Mat> imageQueue;
+
 int main()
 {
     std::string readPipeline = "v4l2src device=/dev/video1 ! "
                                "image/jpeg,width=2560,height=1440,framerate=15/1 ! "
                                "jpegdec ! videoconvert ! appsink";
-    cv::VideoCapture cap(readPipeline, cv::CAP_GSTREAMER);
+    //cv::VideoCapture cap(readPipeline, cv::CAP_GSTREAMER);
+
+    cv::VideoCapture cap(1, cv::CAP_V4L2); // 使用 V4L2 后端
+
+    // 设置分辨率和帧率
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+    cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G')); // 设置格式为 MJPG
+    cap.set(cv::CAP_PROP_FPS, 30);
 
     int frameWidth = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
     int frameHeight = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
     double fps = cap.get(cv::CAP_PROP_FPS);
 
-    std::string writePipeline =  "appsrc ! queue ! videoconvert ! video/x-raw,format=NV12 ! mpph264enc ! h264parse ! mp4mux ! filesink location=output.mp4";
+    std::string writePipeline =  "appsrc ! "
+                                 "queue ! "
+                                 "videoconvert ! video/x-raw,format=NV12 ! "
+                                 "mpph264enc ! h264parse ! mp4mux ! "
+                                 "filesink location=output.mp4";
     cv::VideoWriter writer(writePipeline,
                            cv::CAP_GSTREAMER,
                            0,
@@ -81,10 +95,10 @@ int main()
     cv::Mat *curFramePtr = &frameBuffer[0];
     cv::Mat *lastFramePtr = &frameBuffer[1];
 
-    // 预读取一张图片作为底
+    // 预读取一张图片
     cap >> *lastFramePtr;
 
-    for(size_t count = 0; count < 3000; count ++)
+    for(size_t count = 0; count < 3000; count++)
     {
         auto tStart = std::chrono::system_clock::now();
         cap >> *curFramePtr;
@@ -95,7 +109,15 @@ int main()
             continue;
         }
 
-        std::cout << "diff percent:" << getDiffValue(curFramePtr, lastFramePtr) << std::endl;
+        auto diffValue =  getDiffValue(curFramePtr, lastFramePtr);
+        std::cout << "diff percent:" << diffValue << std::endl;
+        cv::putText(*curFramePtr,
+                    "diff count = " + std::to_string(diffValue),
+                    cv::Point(50, 50),
+                    cv::FONT_HERSHEY_SIMPLEX,
+                    2.0,
+                    cv::Scalar(0, 0, 255),
+                    3);
 
         writer.write(*curFramePtr);
         auto tWrite = std::chrono::system_clock::now() - tStart - tRead;
