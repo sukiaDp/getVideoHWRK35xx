@@ -45,11 +45,6 @@ std::queue<cv::Mat> imageQueue;
 
 int main()
 {
-    std::string readPipeline = "v4l2src device=/dev/video1 ! "
-                               "image/jpeg,width=2560,height=1440,framerate=15/1 ! "
-                               "jpegdec ! videoconvert ! appsink";
-    //cv::VideoCapture cap(readPipeline, cv::CAP_GSTREAMER);
-
     cv::VideoCapture cap(1, cv::CAP_V4L2); // 使用 V4L2 后端
 
     // 设置分辨率和帧率
