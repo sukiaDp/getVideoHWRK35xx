@@ -17,7 +17,9 @@ include_directories(${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 # 添加可执行文件
 add_executable(videoGetHW main.cpp
-        main.cpp)
+        main.cpp
+        App.cpp
+        App.h)
 
 # 链接Boost和OpenCV库
-target_link_libraries(videoGetHW ${Boost_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(videoGetHW ${Boost_LIBRARIES} ${OpenCV_LIBS} pthread)

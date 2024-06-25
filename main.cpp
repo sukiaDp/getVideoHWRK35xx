@@ -1,12 +1,7 @@
 //
 // Created by cat on 6/19/24.
 //
-#include <opencv2/opencv.hpp>
-#include <iostream>
-#include <opencv2/core/ocl.hpp>
-#include <chrono>
-#include <thread>
-
+#include "App.h"
 //#define GET_DIFF_VALUE_DEBUG_ACTIVE
 
 double getDiffValue(cv::Mat *curImg, cv::Mat *lastImg)
@@ -41,9 +36,16 @@ double getDiffValue(cv::Mat *curImg, cv::Mat *lastImg)
     return (float)diffCount / ((float)curImg->cols * (float)curImg->rows);
 }
 
-std::queue<cv::Mat> imageQueue;
-
 int main()
+{
+    App app;
+    auto startTime = std::chrono::system_clock::now();
+    app.run();
+
+    app.waitForThreads();
+    std::cout << "\n\n\njob Done, time spend :" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count() << "ms\n";
+}
+/*int main()
 {
     cv::VideoCapture cap(1, cv::CAP_V4L2); // 使用 V4L2 后端
 
@@ -68,8 +70,6 @@ int main()
                            fps,
                            cv::Size(frameWidth, frameHeight),
                            true);
-
-    std::cout << "frame_width = " << frameWidth << "\nframe_height = " << frameHeight << "\nfps = " << fps << std::endl;
 
     if(!cap.isOpened())
     {
@@ -134,4 +134,4 @@ int main()
 
     std::cout << "done";
     return 0;
-}
+}*/
